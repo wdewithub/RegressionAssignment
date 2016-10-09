@@ -46,7 +46,7 @@ summary(fit_red)
 
 In our final model we see that when comparing cars of similar horsepower and weight, there is nolonger a significant difference between fuel consumption of manual versus automatic transmission cars. The counterintuitive relationship between mpg and transmission type found earlier was entirely due to the fact that the cars in our dataset with manual transmission had in general lower weights and horsepower and lower weight and horsepower lead to higher miles per gallon.  
 
-Finally, we have a look at the residual plots to confirm the validity of our model (Fig 2 - Appendix). Although from the plot of the residuals versus the fitted values it seems the model might benefit from adding a quadratic relationship of horsepower and/or weight this won't change our conclusions wrt the relationship between mpg and transmission type. Overall we confirm the validity of our final model and conclude there is no evidence of differences in fuel consumption between a manual and automatic transmission, correcting for weight and horsepower.
+Finally, we have a look at the residual plots to confirm the validity of our model (Fig 2 - Appendix). Although from the plot of the residuals versus the fitted values it seems the model might benefit from adding a quadratic relationship of horsepower and/or weight this won't change our conclusions wrt relation between mpg and transmission type. Neither does there seem to be a concern of influential points (dfbetas for obs 17, 18 and 20 below 1). Overall we confirm the validity of our model and conclude there is no evidence of differences in mpg between a manual and automatic transmission, holding weight and hp constant.
 
 
 
@@ -83,8 +83,10 @@ anova(fit_full,fit_red)
 anova(fit_red,fit_main)
 ```
 
-```{r residual plot final model, fig.height=3.5, fig.width=3.5}
-par(cex.main=0.8)
+```{r residual plot final model, fig.height=3.5}
+par(cex.main=0.8,mfrow=c(1,2))
 plot(fit_red,which=1)
-title(main="Fig 2: Residuals vs fitted values")
+plot(fit_red,which=4)
+title(main="Fig 2: Residual plots")
+dfbetas(fit_red)[c(17,18,20),]
 ```
