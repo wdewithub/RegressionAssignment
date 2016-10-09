@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Executive Summary
 
 In this analysis we investigated the relationship between fuel consumption and the transmission type. 
-We had information on both variables as well as a set of 9 other car characteristics at our disposal for 32 car brands. 
+We had information on both variables as well as a set of 9 other car characteristics at our disposal for 32 car brands. Keeping horsepower and weight constant we found no significant difference in fuel consumption between a manual and automatic transmission.  
 
 ## Exploratory Data Analysis
 
@@ -23,65 +23,68 @@ str(mtcars)
 library(dplyr)
 mtcars <- mtcars %>% mutate(cyl=as.factor(cyl), am=as.factor(am), vs=as.factor(vs), gear=as.factor(gear))
 ```
+Since fuel consumption (mpg) is a continous variable we will estimate a linear regression model. 
+One of the assumptions of a linear model is that the dependent variable is normally distributed. 
+Comparing the density of mpg with the normal density we noticed mpg is somewhat skewed to the right (Fig 1 - Appendix). However the deviation from normality is not too strong and probably caused by our rather small sample size. Given that least squares estimation is quite robust against violation of the normality assumption, we continue fitting a linear regression model by means of least squares.
 
-Since fuel consumption (mpg) is a continous variable we will estimate a linear regression model. One of the assumptions of a linear model is that the dependent variable is normally distributed. 
+Next we'll have a first glance whether there does seem to be a relationship between transmission type and fuel consumption. From a boxplot we notice that the median miles per gallon (mpg) is quite higher for a manual transmission than for an automatic transmission and it is also more variable. 
 
-Comparing the density of mpg with the normal density we see mpg is somewhat skewed to the right (fig 1 - Appendix). However the deviation from normality is not too strong and probably caused by our rather small sample size. Given that least squares estimation is quite robust against violation of the normality assumption, we continue fitting a linear regression model by means of least squares.
-
-Next we'll have a first glance whether there does seem to be a relationship between transmission type and fuel consumption. The average fuel consumption with an automatic transmission is 17.14 mpg, which is nearly one third less than the average fuel consumption with a manual transmission. From a boxplot (fig 2 - Appendix) we also notice that the fuel consumption with a manual transmission is far more variable than with an automatic transmission, especially skewed towards higher values of mpg. 
+```{r boxplot mpg by transmission type, fig.height=3.25, fig.width=4}
+boxplot(mtcars$mpg~mtcars$am,xlab="transmission type (0=automatic 1=manual)", ylab="fuel consumption (mpg)", main="Comparing mpg by transmission type")
+```
 
 ##Formal modelling
 
-We now want to confirm whether there is a statistically significant difference between fuel consumption of automatic versus manual transmission types. We therefore fit a simple linear regression model between both.
+We now want to confirm whether there is a statistically significant difference. We therefore fit a simple linear regression model between both. We see that the coefficient for manual transmission is with a p-value of 0.000285 (table 1 - Appendix) indeed signifant at alpha=5%, and positive so that we can confirm that miles per gallon is higher with a manual transmission than with an automatic transmission. This seems counterintuive. Therefore, we'll check whether any of the other variables included in the mtcars dataset might confound this relationship. We start in fitting the full model, including all variables in the dataset, and see whether any of the other predictors also have a significant impact on fuel consumption.
 
-Fitting a linear model of mpg on transmission type, we see that the coefficient for manual transmission is with a p-value of 0.000285 indeed signifant at alpha=5%, and positive so that we can confirm that fuel consumption with manual transmission is higher than with an automatic transmission. 
+The F-test - testing whether the increase in the residual sum of squares when reducing the number of predictors is sufficiently small - is highly significant at alpha=5% (Table 2 - Appendix), concluding there are important other predictors than transmission type solely in play. Nevertheless when looking at the p-values of the individual parameter estimates none of them are significant at alpha=5%, indicating a likely problem of multicollinearity among the predictors. Since horsepower and weight have still low p-values (< 0.10) we will test whether we can jointly drop the other predictors: cyl, disp, drat, qsec, vs, gear and carb in fitting a third model including solely transmission type, horsepower and weight and comparing this to the full model including all variables. The F-test for jointly dropping the 7 predictors is 0.8155 with p-value of 0.6089 (Table 3 - Appendix) and therefore we conclude we can use the simplified model with 3 predictors. The F-test comparing the simplified model to the model only including transmission type attains 41.979, which is highly significant at alpha=0.05. So, horsepower and weight should be included in the model. 
 
-Next we'll check whether any of the other variables included in the mtcars dataset might confound this relationship. Therefore we'll fit the full model and see whether any of the other predictors also have a significant impact on fuel consumption.
+```{r OLSE final model}
+fit_red <- lm(mpg~am+hp+wt,data=mtcars)
+summary(fit_red)
+```
 
-The F-test - testing whether the increase in the residual sum of squares when reducing the number of predictors is sufficiently small - is highly significant at alpha=5%, concluding there are important other predictors than transmission type solely in play. Nevertheless when looking at the p-values of the individual parameter estimates none of them are significant at alpha=5%, indicating a likely problem of multicollinearity among the predictors. Since horsepower and weight have still low p-values (< 0.10) we will test whether we can jointly drop the other predictors: cyl, disp, drat, qsec, vs, gear and carb in fitting a third model including solely transmission type, horsepower and weight and comparing this to the full model including all variables.
+In our final model we see that when comparing cars of similar horsepower and weight, there is nolonger a significant difference between fuel consumption of manual versus automatic transmission cars. The counterintuitive relationship between mpg and transmission type found earlier was entirely due to the fact that the cars in our dataset with manual transmission had in general lower weights and horsepower and lower weight and horsepower lead to higher miles per gallon.  
 
+Finally, we have a look at the residual plots to confirm the validity of our model (Fig 2 - Appendix). Although from the plot of the residuals versus the fitted values it seems the model might benefit from adding a quadratic relationship of horsepower and/or weight this won't change our conclusions wrt the relationship between mpg and transmission type. Overall we confirm the validity of our final model and conclude there is no evidence of differences in fuel consumption between a manual and automatic transmission, correcting for weight and horsepower.
 
-!!! Draai dit hierboven en zie of je joint test ok is en dan checken of je 2 extra variabelen relatie veranderen. Erna nog residual plots (in appendix) en als geen outliers dan nog effect in absolute getallen inschatten en een executive summary schrijven !!!
 
 
 ##Appendix:
 
-###Figures and charts of exploratory analysis
+##Figures of exploratory analysis
 
-```{r comparing mean mpg by transmission type}
-tapply(mtcars$mpg,mtcars$am,mean)
-```
-
-```{r check normality}
+```{r check normality, fig.height=3}
 library(ggplot2)
 g <- ggplot(data=mtcars,aes(x = mpg))+ labs(title="Fig 1: Checking normality of our dependent variable") 
 g <- g + geom_histogram(aes(y = ..density..), fill = "white", binwidth=2, colour = "black")
 g + stat_function(fun=dnorm,colour="red", 
                   size=1.5, args=list(mean=mean(mtcars$mpg), sd=sd(mtcars$mpg)))+theme_bw()
-
-```
-
-```{r boxplot mpg by transmission type}
-boxplot(mtcars$mpg~mtcars$am,xlab="transmission type (0=automatic 1=manual)", ylab="fuel consumption (mpg)", main="Fig 2: Comparing distribution of mpg by transmission type")
 ```
 
 ##Figures and charts of formal modelling
 
-```{r OLSE_main}
+```{r TABLE1: OLSE_main}
 fit_main <- lm(mpg~am,data=mtcars)
 summary(fit_main)
 ```
 
-```{r OLSE_full}
+```{r TABLE2: OLSE_full}
 fit_full <- lm(mpg~.,data=mtcars)
 anova(fit_full,fit_main)
 ```
-```{r OLSE_full, eval=FALSE}
+```{r OLSE_full}
 summary(fit_full)
 ```
 
-```{r OLSE_reduc}
+```{r TABLE 3: OLSE_reduc}
 fit_red <- lm(mpg~am+hp+wt,data=mtcars)
 anova(fit_full,fit_red)
 anova(fit_red,fit_main)
+```
+
+```{r residual plot final model, fig.height=3.5, fig.width=3.5}
+par(cex.main=0.8)
+plot(fit_red,which=1)
+title(main="Fig 2: Residuals vs fitted values")
 ```
